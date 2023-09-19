@@ -276,6 +276,7 @@ clean:
 	mkfs/mkfs .gdbinit \
         $U/usys.S \
 	$(UPROGS) \
+	lab.zip \
 	ph barrier
 
 # try to generate a unique GDB port
@@ -367,7 +368,7 @@ submit-check:
 		test "$$r" = y; \
 	fi
 
-zipball: submit-check
-	git archive --format=zip --output lab.zip HEAD
+zipball: clean submit-check
+	git archive --verbose --format zip --output lab.zip HEAD
 
 .PHONY: zipball clean grade submit-check

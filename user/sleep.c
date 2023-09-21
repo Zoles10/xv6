@@ -1,11 +1,18 @@
-#include "kernel/sysproc.c"
+#include "kernel/types.h"
+#include "kernel/stat.h"
+#include "user/user.h"
 
-void sleep(int n)
+int main(int argc, char *argv[])
 {
-  sys_sleep(n);
-}
-void main(int argc, char *argv[]){
-  sleep(atoi(*argv[1]));
+  if (argc <= 1)
+  {
+    fprintf(2, "Daj nejake cislo\n");
+    exit(1);
+  }
+
+  int seconds = atoi(argv[1]);
+
+  sleep(seconds);
+
   exit(0);
 }
-

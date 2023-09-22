@@ -2,11 +2,6 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-void sleep(int n)
-{
-  sys_sleep(n);
-}
-
 int main(int argc, char *argv[])
 {
   if (argc <= 1)

@@ -8,7 +8,7 @@ void child(int readFD)
   // nacita prve zapisane cislo a printne ho
   if (read(readFD, &prime, sizeof(prime)) == 0)
   {
-    exit(0);
+    exit(1);
   }
   fprintf(0, "prime %d\n", prime);
 

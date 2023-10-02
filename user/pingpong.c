@@ -6,31 +6,27 @@ int main(int argc, char *argv[])
 {
   int fds[2];
   pipe(fds);
-  int process = fork();
-  if (process > 0)
+  int pid = fork();
+
+  if (pid == 0)
   {
-    char *buff[1];
-    buff[0] = "a";
-    if (write(fds[1], buff, 1) != 1)
-    {
-      fprintf(0, "error in write");
-    }
-    close(fds[1]);
-    read(fds[0], buff, 1);
-    fprintf(0, "%d: received pong\n", getpid());
+    char buf[1];
+    read(fds[0], buf, 1);
     close(fds[0]);
-  }
-  else if (process == 0)
-  {
-    char *buff[1];
-    buff[0] = "a";
-    read(fds[0], buff, 1);
-    fprintf(0, "%d: received ping\n", getpid());
-    write(fds[1], buff, 1);
-    close(fds[0]);
+    printf("%d: received ping\n", getpid());
+    write(fds[1], "a", 1);
     close(fds[1]);
   }
-  else if (process < 0)
+  else if (pid > 0)
+  {
+    write(fds[1], "a", 1);
+    close(fds[1]);
+    char buf[1];
+    read(fds[0], buf, 1);
+    close(fds[0]);
+    printf("%d: received pong\n", getpid());
+  }
+  else
   {
     exit(1);
   }

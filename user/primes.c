@@ -48,7 +48,7 @@ int main()
 {
   int inOut[2];
   if (pipe(inOut) < 0)
-  {
+  { 
     exit(1);
   }
   int pid = fork();

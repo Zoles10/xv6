@@ -705,3 +705,19 @@ void procdump(void)
     printf("\n");
   }
 }
+
+uint64 getActiveProcNum()
+{
+  struct proc *p;
+  uint64 activeProcNum = 0;
+  initlock(&pid_lock, "nextpid");
+  initlock(&wait_lock, "wait_lock");
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+    if (p->state != UNUSED)
+    {
+      activeProcNum++;
+    }
+  }
+  return activeProcNum;
+}

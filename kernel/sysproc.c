@@ -12,7 +12,7 @@ sys_exit(void)
   int n;
   argint(0, &n);
   exit(n);
-  return 0;  // not reached
+  return 0; // not reached
 }
 
 uint64
@@ -43,7 +43,7 @@ sys_sbrk(void)
 
   argint(0, &n);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
@@ -54,12 +54,13 @@ sys_sleep(void)
   int n;
   uint ticks0;
 
-
   argint(0, &n);
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(killed(myproc())){
+  while (ticks - ticks0 < n)
+  {
+    if (killed(myproc()))
+    {
       release(&tickslock);
       return -1;
     }
@@ -69,15 +70,38 @@ sys_sleep(void)
   return 0;
 }
 
-
-#ifdef LAB_PGTBL
-int
+// #ifdef LAB_PGTBL
+uint64
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
+  uint64 virtualnaAdresa;
+  int pocetStranok;
+  uint64 uzivatelskaAdresa;
+  int res = 0;
+  pte_t *pteAdresa;
+  argaddr(0, &virtualnaAdresa);
+  argint(1, &pocetStranok);
+  argaddr(2, &uzivatelskaAdresa);
+  pagetable_t pagetable = myproc()->pagetable;
+
+  for (int i = 0; i < pocetStranok; ++i)
+  {
+    pteAdresa = walk(pagetable, virtualnaAdresa, 0);
+    if (*pteAdresa & PTE_A)
+    {
+      *pteAdresa &= ~(PTE_A);
+      res |= (1 << i);
+    }
+    virtualnaAdresa += PGSIZE;
+    printf("%d\n", res);
+  }
+  if (copyout(pagetable, uzivatelskaAdresa, (char *)&res, sizeof(res)) < 0)
+  {
+    return -1;
+  }
   return 0;
 }
-#endif
+// #endif
 
 uint64
 sys_kill(void)

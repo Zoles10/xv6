@@ -142,13 +142,16 @@ found:
     release(&p->lock);
     return 0;
   }
+
   if ((p->usyscall = (struct usyscall *)kalloc()) == 0)
   {
     freeproc(p);
     release(&p->lock);
     return 0;
   }
-  p->usyscall->pid =;
+  struct usyscall u;
+  u.pid = p->pid;
+  *(struct usyscall *)p->usyscall = u;
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -214,6 +217,13 @@ proc_pagetable(struct proc *p)
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
+  }
+
+  if (mappages(pagetable, USYSCALL, PGSIZE, (uint64)p->usyscall, PTE_R | PTE_W | PTE_U) < 0)
+  {
+    uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+    uvmunmap(pagetable, TRAPFRAME, 1, 0);
+    uvmfree(pagetable, 0);
   }
 
   return pagetable;
@@ -310,6 +320,9 @@ int fork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  if (p->usyscall)
+    kfree((void *)p->usyscall);
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);

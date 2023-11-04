@@ -121,7 +121,6 @@ void printf(char *fmt, ...)
 
 void panic(char *s)
 {
-  backtrace();
   pr.locking = 0;
   printf("panic: ");
   printf(s);
@@ -135,22 +134,4 @@ void printfinit(void)
 {
   initlock(&pr.lock, "pr");
   pr.locking = 1;
-}
-
-void backtrace(void)
-{
-  printf("backtrace:\n");
-  struct proc *p = myproc();
-  uint64 fp = r_fp();
-
-  while (1)
-  {
-    uint64 ret_addr = *((uint64 *)(fp - 8));
-    fp = *((uint64 *)(fp - 16));
-    if (PGROUNDUP(fp) != p->kstack + PGSIZE)
-    {
-      break;
-    }
-    printf("%p\n", ret_addr);
-  }
 }

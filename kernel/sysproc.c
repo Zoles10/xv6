@@ -77,12 +77,12 @@ sys_pgaccess(void)
   uint64 virtualnaAdresa;
   int pocetStranok;
   uint64 uzivatelskaAdresa;
-  int res = 0;
-  pte_t *pteAdresa;
   argaddr(0, &virtualnaAdresa);
   argint(1, &pocetStranok);
   argaddr(2, &uzivatelskaAdresa);
   pagetable_t pagetable = myproc()->pagetable;
+  int res = 0;
+  pte_t *pteAdresa;
 
   for (int i = 0; i < pocetStranok; ++i)
   {

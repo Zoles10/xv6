@@ -30,6 +30,7 @@ struct
 
 void kinit()
 {
+  initlock(&ref_count_lock, "refcount");
   initlock(&kmem.lock, "kmem");
   freerange(end, (void *)PHYSTOP);
 }
@@ -86,7 +87,6 @@ kalloc(void)
   {
     kmem.freelist = r->next;
     acquire(&ref_count_lock);
-    // initialization the ref count to 1
     useReference[(uint64)r / PGSIZE] = 1;
     release(&ref_count_lock);
   }

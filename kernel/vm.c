@@ -143,26 +143,19 @@ void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
-// physical addresses starting at pa.
-// va and size MUST be page-aligned.
-// Returns 0 on success, -1 if walk() couldn't
+// physical addresses starting at pa. va and size might not
+// be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
   uint64 a, last;
   pte_t *pte;
 
-  if ((va % PGSIZE) != 0)
-    panic("mappages: va not aligned");
-
-  if ((size % PGSIZE) != 0)
-    panic("mappages: size not aligned");
-
   if (size == 0)
     panic("mappages: size");
 
-  a = va;
-  last = va + size - PGSIZE;
+  a = PGROUNDDOWN(va);
+  last = PGROUNDDOWN(va + size - 1);
   for (;;)
   {
     if ((pte = walk(pagetable, a, 1)) == 0)
@@ -335,20 +328,13 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: pte should exist");
     if ((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
-    // PAY ATTENTION!!!
-    // 只有父进程内存页是可写的，才会将子进程和父进程都设置为COW和只读的；否则，都是只读的，但是不标记为COW，因为本来就是只读的，不会进行写入
-    // 如果不这样做，父进程内存只读的时候，标记为COW，那么经过缺页中断，程序就可以写入数据，于原本的不符合
     if (*pte & PTE_W)
     {
-      // set PTE_W to 0
       *pte &= ~PTE_W;
-      // set PTE_RSW to 1
-      // set COW page
       *pte |= PTE_RSW;
     }
     pa = PTE2PA(*pte);
 
-    // increment the ref count
     acquire(&ref_count_lock);
     useReference[pa / PGSIZE] += 1;
     release(&ref_count_lock);
@@ -359,22 +345,16 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     // memmove(mem, (char*)pa, PGSIZE);
     if (mappages(new, i, PGSIZE, (uint64)pa, flags) != 0)
     {
-      // kfree(mem);
       goto err;
     }
-    return 0;
   }
+  return 0;
 
 err:
   uvmunmap(new, 0, i / PGSIZE, 1);
   return -1;
 }
 
-int checkcowpage(uint64 va, pte_t *pte, struct proc *p)
-{
-  return (va < p->sz)                           // va should blow the size of process memory (bytes)
-         && (*pte & PTE_V) && (*pte & PTE_RSW); // pte is COW page
-}
 // mark a PTE invalid for user access.
 // used by exec for the user stack guard page.
 void uvmclear(pagetable_t pagetable, uint64 va)
@@ -385,6 +365,12 @@ void uvmclear(pagetable_t pagetable, uint64 va)
   if (pte == 0)
     panic("uvmclear");
   *pte &= ~PTE_U;
+}
+
+int checkcowpage(uint64 va, pte_t *pte, struct proc *p)
+{
+  return (va < p->sz)                           // va should blow the size of process memory (bytes)
+         && (*pte & PTE_V) && (*pte & PTE_RSW); // pte is COW page
 }
 
 // Copy from kernel to user.
@@ -411,7 +397,6 @@ int copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
       char *mem;
       if ((mem = kalloc()) == 0)
       {
-        // kill the process
         p->killed = 1;
       }
       else

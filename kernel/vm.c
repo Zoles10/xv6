@@ -330,23 +330,38 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     if (*pte & PTE_W)
     {
-      *pte &= ~PTE_W;
-      *pte |= PTE_RSW;
+      *pte &= ~(PTE_W);
+      *pte |= (PTE_RSW);
     }
     pa = PTE2PA(*pte);
-
-    acquire(&ref_count_lock);
-    useReference[pa / PGSIZE] += 1;
-    release(&ref_count_lock);
-
     flags = PTE_FLAGS(*pte);
-    // if((mem = kalloc()) == 0)
-    //   goto err;
-    // memmove(mem, (char*)pa, PGSIZE);
-    if (mappages(new, i, PGSIZE, (uint64)pa, flags) != 0)
+    acquire(&ref_count_lock);
+    useReference[pa / PGSIZE]++;
+    release(&ref_count_lock);
+    if (mappages(new, i, PGSIZE, pa, flags) != 0)
     {
       goto err;
     }
+
+    // if (*pte & PTE_W)
+    // {
+    //   *pte &= ~PTE_W;
+    //   *pte |= PTE_RSW;
+    // }
+    // pa = PTE2PA(*pte);
+
+    // acquire(&ref_count_lock);
+    // useReference[pa / PGSIZE] += 1;
+    // release(&ref_count_lock);
+
+    // flags = PTE_FLAGS(*pte);
+    // // if((mem = kalloc()) == 0)
+    // //   goto err;
+    // // memmove(mem, (char*)pa, PGSIZE);
+    // if (mappages(new, i, PGSIZE, (uint64)pa, flags) != 0)
+    // {
+    //   goto err;
+    // }
   }
   return 0;
 
@@ -376,6 +391,7 @@ int checkcowpage(uint64 va, pte_t *pte, struct proc *p)
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
+
 int copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
   uint64 n, va0, pa0;
@@ -395,26 +411,13 @@ int copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     if (checkcowpage(va0, pte, p))
     {
       char *mem;
-      if ((mem = kalloc()) == 0)
-      {
-        p->killed = 1;
-      }
-      else
-      {
-        memmove(mem, (char *)pa0, PGSIZE);
-        // PAY ATTENTION!!!
-        // This statement must be above the next statement
-        uint flags = PTE_FLAGS(*pte);
-        // decrease the reference count of old memory that va0 point
-        // and set pte to 0
-        uvmunmap(pagetable, va0, 1, 1);
-        // change the physical memory address and set PTE_W to 1
-        *pte = (PA2PTE(mem) | flags | PTE_W);
-        // set PTE_RSW to 0
-        *pte &= ~PTE_RSW;
-        // update pa0 to new physical memory address
-        pa0 = (uint64)mem;
-      }
+      mem = kalloc();
+      memmove(mem, (char *)pa0, PGSIZE);
+      uint flags = PTE_FLAGS(*pte);
+      uvmunmap(pagetable, va0, 1, 1);
+      *pte = (PA2PTE(mem) | flags | PTE_W);
+      *pte &= ~PTE_RSW;
+      pa0 = (uint64)mem;
     }
 
     n = PGSIZE - (dstva - va0);

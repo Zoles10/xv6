@@ -8,7 +8,7 @@
 #define NBUCKET 5
 #define NKEYS 100000
 
-pthread_mutex_t lock; // deklarácia zámku
+pthread_mutex_t lock[NBUCKET]; // deklarácia zámku
 
 struct entry
 {
@@ -56,9 +56,9 @@ static void put(int key, int value)
   }
   else
   {
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&lock[i]);
     insert(key, value, &table[i], table[i]);
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&lock[i]);
   }
 }
 
@@ -113,7 +113,10 @@ int main(int argc, char *argv[])
   void *value;
   double t1, t0;
 
-  pthread_mutex_init(&lock, NULL); // inicializácia zámku
+  for (int i = 0; i < NBUCKET; i++)
+  {
+    pthread_mutex_init(&lock[i], NULL); // inicializácia zámku
+  }
 
   if (argc < 2)
   {

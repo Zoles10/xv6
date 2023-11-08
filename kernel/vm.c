@@ -411,13 +411,19 @@ int copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     if (checkcowpage(va0, pte, p))
     {
       char *mem;
-      mem = kalloc();
-      memmove(mem, (char *)pa0, PGSIZE);
-      uint flags = PTE_FLAGS(*pte);
-      uvmunmap(pagetable, va0, 1, 1);
-      *pte = (PA2PTE(mem) | flags | PTE_W);
-      *pte &= ~PTE_RSW;
-      pa0 = (uint64)mem;
+      if ((mem = kalloc()) == 0)
+      {
+        p->killed = 1;
+      }
+      else
+      {
+        memmove(mem, (char *)pa0, PGSIZE);
+        uint flags = PTE_FLAGS(*pte);
+        uvmunmap(pagetable, va0, 1, 1);
+        *pte = (PA2PTE(mem) | flags | PTE_W);
+        *pte &= ~PTE_RSW;
+        pa0 = (uint64)mem;
+      }
     }
 
     n = PGSIZE - (dstva - va0);

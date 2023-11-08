@@ -76,30 +76,51 @@ sys_pgaccess(void)
 {
   uint64 virtualnaAdresa;
   int pocetStranok;
-  uint64 uzivatelskaAdresa;
+  uint64 destinationAdresa;
   argaddr(0, &virtualnaAdresa);
   argint(1, &pocetStranok);
-  argaddr(2, &uzivatelskaAdresa);
-  pagetable_t pagetable = myproc()->pagetable;
-  int res = 0;
-  pte_t *pteAdresa;
-
-  for (int i = 0; i < pocetStranok; ++i)
+  argaddr(2, &destinationAdresa);
+  int maska = 0;
+  for (int i = 0; i < pocetStranok; i++)
   {
-    pteAdresa = walk(pagetable, virtualnaAdresa, 0);
-    if (*pteAdresa & PTE_A)
+    pte_t *currentPTE = walk(myproc()->pagetable, virtualnaAdresa + i, 0);
+    if (*currentPTE & PTE_A)
     {
-      *pteAdresa &= ~(PTE_A);
-      res |= (1 << i);
+      *currentPTE &= ~(PTE_A);
+      maska |= (1 << i);
     }
     virtualnaAdresa += PGSIZE;
-    printf("%d\n", res);
   }
-  if (copyout(pagetable, uzivatelskaAdresa, (char *)&res, sizeof(res)) < 0)
-  {
-    return -1;
-  }
+
+  copyout(myproc()->pagetable, destinationAdresa, (char *)&maska, sizeof(maska));
   return 0;
+
+  // uint64 virtualnaAdresa;
+  // int pocetStranok;
+  // uint64 uzivatelskaAdresa;
+  // argaddr(0, &virtualnaAdresa);
+  // argint(1, &pocetStranok);
+  // argaddr(2, &uzivatelskaAdresa);
+  // pagetable_t pagetable = myproc()->pagetable;
+  // int res = 0;
+  // pte_t *pteAdresa;
+
+  // for (int i = 0; i < pocetStranok; ++i)
+  // {
+  //   pteAdresa = walk(pagetable, virtualnaAdresa, 0);
+  //   if (*pteAdresa & PTE_A)
+  //   {
+  //     *pteAdresa &= ~(PTE_A);
+  //     res |= (1 << i);
+  //   }
+  //   virtualnaAdresa += PGSIZE;
+  //   printf("%d\n", res);
+  // }
+  // if (copyout(pagetable, uzivatelskaAdresa, (char *)&res, sizeof(res)) < 0)
+  // {
+  //   return -1;
+  // }
+  // return 0;
 }
 // #endif
 

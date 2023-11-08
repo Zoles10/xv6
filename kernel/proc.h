@@ -155,10 +155,9 @@ struct proc
   char name[16];               // Process name (debugging)
 
   // alarm
-  int interval;           // interval of alarm
-  int ticks;              // ticks of alarm
-  int deltaT;             // time between last call
-  uint64 funcPtr;         // ptr to function handler
-  struct trapframe *regs; // all regs that need to be saved
+  int interval;          // interval of alarm
+  int ticks;             // ticks of alarm
+  uint64 funcPtr;        // ptr to function handler
+  struct trapframe regs; // all regs that need to be saved
   int alarmActive;
 };

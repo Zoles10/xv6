@@ -87,7 +87,6 @@ uint64
 sys_uptime(void)
 {
   uint xticks;
-
   acquire(&tickslock);
   xticks = ticks;
   release(&tickslock);
@@ -97,15 +96,16 @@ sys_uptime(void)
 int sys_sigreturn(void)
 {
   myproc()->alarmActive = 0;
-  memmove(myproc()->trapframe, myproc()->regs, PGSIZE);
-  kfree(myproc()->regs);
-  return 0;
+  *myproc()->trapframe = myproc()->regs;
+  // memmove(myproc()->trapframe, myproc()->regs, PGSIZE);
+  // kfree(myproc()->regs);
+  return myproc()->trapframe->a0;
 }
 
 int sys_sigalarm(void)
 {
   argint(0, &(myproc()->interval));
   argaddr(1, &(myproc()->funcPtr));
-  myproc()->deltaT = myproc()->ticks;
+  myproc()->ticks = 0;
   return 0;
 }

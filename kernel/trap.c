@@ -64,6 +64,7 @@ void usertrap(void)
 
     syscall();
   }
+
   else if ((which_dev = devintr()) != 0)
   {
     // ok
@@ -81,17 +82,18 @@ void usertrap(void)
   // give up the CPU if this is a timer interrupt.
   if (which_dev == 2)
   {
-    p->ticks++;
-    if (p->interval != 0 && p->alarmActive == 0)
+    struct proc *proc = myproc();
+    if (!proc->alarmActive && proc->interval != 0)
     {
-      if (p->deltaT + p->interval <= p->ticks)
+      proc->ticks++;
+      if (proc->ticks == proc->interval)
       {
-        p->deltaT = p->ticks;
-        struct trapframe *tf = kalloc();
-        memmove(tf, p->trapframe, PGSIZE);
-        p->regs = tf;
-        p->trapframe->epc = p->funcPtr;
-        p->alarmActive = 1;
+        proc->ticks = 0;
+        // proc->regs = kalloc();
+        proc->regs = *proc->trapframe;
+        // memmove(proc->regs, proc->trapframe, PGSIZE);
+        proc->trapframe->epc = proc->funcPtr;
+        proc->alarmActive = 1;
       }
     }
     yield();

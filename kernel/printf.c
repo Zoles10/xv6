@@ -140,17 +140,29 @@ void printfinit(void)
 void backtrace()
 {
   printf("backtrace:\n");
-  struct proc *p = myproc();
-  uint64 fp = r_fp();
-
-  while (1)
+  uint64 currentFP = r_fp();
+  while (PGROUNDUP(currentFP) == myproc()->kstack + PGSIZE)
   {
-    uint64 ret_addr = *((uint64 *)(fp - 8));
-    fp = *((uint64 *)(fp - 16));
-    if (PGROUNDUP(fp) != p->kstack + PGSIZE)
-    {
-      break;
-    }
-    printf("%p\n", ret_addr);
+    uint64 returnAdress = *(uint64 *)(currentFP - 8);
+    printf("%p\n", returnAdress);
+    currentFP = *(uint64 *)(currentFP - 16);
   }
 }
+
+// void backtrace()
+// {
+//   printf("backtrace:\n");
+//   struct proc *p = myproc();
+//   uint64 fp = r_fp();
+
+//   while (1)
+//   {
+//     uint64 ret_addr = *((uint64 *)(fp - 8));
+//     fp = *((uint64 *)(fp - 16));
+//     if (PGROUNDUP(fp) != p->kstack + PGSIZE)
+//     {
+//       break;
+//     }
+//     printf("%p\n", ret_addr);
+//   }
+// }
